@@ -1,975 +1,194 @@
-<!DOCTYPE HTML>
-<html lang="en-us">
+<!doctype html>
+<html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <title>web hl2</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no, minimum-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Half-Life 2</title>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;600&family=Share+Tech+Mono&display=swap" rel="stylesheet">
-
-  <script>
-    (async function () {
-      if (!("serviceWorker" in navigator)) return;
-
-      const COI_SW = "coi-serviceworker.js";
-      const alreadyIsolated = self.crossOriginIsolated;
-
-      const hasCOI = navigator.serviceWorker.controller?.scriptURL?.includes(COI_SW);
-
-      if (alreadyIsolated && hasCOI) {
-        console.log("[COI] Already cross-origin isolated, game will load.");
-        return;
-      }
-
-      const regs = await navigator.serviceWorker.getRegistrations();
-      console.log("[COI] Found " + regs.length + " service worker(s), unregistering all...");
-
-      await Promise.all(regs.map(r => {
-        console.log("[COI] Unregistering: " + (r.active?.scriptURL || r.scope));
-        return r.unregister();
-      }));
-
-      console.log("[COI] Registering coi-serviceworker.js...");
-      const reg = await navigator.serviceWorker.register(COI_SW, { scope: "./" });
-
-      const sw = reg.installing || reg.waiting || reg.active;
-
-      if (sw && sw.state !== "activated") {
-        console.log("[COI] Waiting for SW to activate...");
-
-        await new Promise(resolve => {
-          sw.addEventListener("statechange", function handler(e) {
-            console.log("[COI] SW state: " + e.target.state);
-
-            if (e.target.state === "activated") {
-              sw.removeEventListener("statechange", handler);
-              resolve();
-            }
-          });
-        });
-      }
-
-      console.log("[COI] SW activated, reloading for isolation...");
-      location.reload();
-    })();
-  </script>
+  <!-- Enables SharedArrayBuffer on GitHub Pages without server-side config -->
+  <script src="coi-serviceworker.js"></script>
 
   <style>
-    *, *::before, *::after {
-      box-sizing: border-box;
+    html, body {
       margin: 0;
       padding: 0;
-    }
-
-    :root {
-      --orange: #f4720b;
-      --orange-dim: #a34d08;
-      --blue: #4dc8f4;
-      --blue-dim: #1a6a8a;
-      --bg: #0a0a0a;
-      --surface: #111214;
-      --border: #1e2124;
-      --text: #c8cdd4;
-      --text-dim: #555c66;
-      --glow-orange: 0 0 20px rgba(244,114,11,0.4);
-      --glow-blue: 0 0 20px rgba(77,200,244,0.3);
-    }
-
-    html,
-    body {
       width: 100%;
-      min-height: 100vh;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Rajdhani', sans-serif;
-      overflow-x: hidden;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.03) 2px,
-        rgba(0,0,0,0.03) 4px
-      );
-      pointer-events: none;
-      z-index: 1000;
-    }
-
-    .wrapper {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 16px 40px;
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 1280px;
-      max-width: 100%;
-      padding-bottom: 16px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 16px;
-    }
-
-    .logo-area {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-
-    .logo-area img {
-      width: 52px;
-      height: 52px;
-      object-fit: contain;
-      filter: drop-shadow(var(--glow-orange));
-    }
-
-    .title-block {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .title-main {
-      font-size: 28px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      background: linear-gradient(90deg, #fff 0%, var(--orange) 45%, var(--blue) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1;
-    }
-
-    .title-sub {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      margin-top: 3px;
-    }
-
-    .header-right {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      padding: 6px 14px;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 0.08em;
-      color: var(--text-dim);
-      min-width: 180px;
-    }
-
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      flex-shrink: 0;
-      transition: background 0.3s, box-shadow 0.3s;
-    }
-
-    .status-dot.active {
-      background: var(--orange);
-      box-shadow: 0 0 8px var(--orange);
-      animation: pulse 1.4s ease-in-out infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-      }
-
-      50% {
-        opacity: 0.4;
-      }
-    }
-
-    .btn-fullscreen {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: transparent;
-      border: 1px solid var(--orange-dim);
-      color: var(--orange);
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      letter-spacing: 0.12em;
-      text-transform: uppercase;
-      padding: 7px 18px;
-      border-radius: 3px;
-      cursor: pointer;
-      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-    }
-
-    .btn-fullscreen:hover {
-      background: rgba(244,114,11,0.1);
-      border-color: var(--orange);
-      box-shadow: var(--glow-orange);
-    }
-
-    .btn-fullscreen svg {
-      width: 14px;
-      height: 14px;
-      fill: currentColor;
-    }
-
-    .canvas-frame {
-      position: relative;
-      width: 1280px;
-      max-width: 100%;
-    }
-
-    .canvas-frame::before,
-    .canvas-frame::after {
-      content: '';
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    .canvas-frame::before {
-      top: -1px;
-      left: -1px;
-      border-top: 2px solid var(--orange);
-      border-left: 2px solid var(--orange);
-    }
-
-    .canvas-frame::after {
-      bottom: -1px;
-      right: -1px;
-      border-bottom: 2px solid var(--blue);
-      border-right: 2px solid var(--blue);
-    }
-
-    .corner-tr,
-    .corner-bl {
-      position: absolute;
-      width: 20px;
-      height: 20px;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    .corner-tr {
-      top: -1px;
-      right: -1px;
-      border-top: 2px solid var(--blue);
-      border-right: 2px solid var(--blue);
-    }
-
-    .corner-bl {
-      bottom: -1px;
-      left: -1px;
-      border-bottom: 2px solid var(--orange);
-      border-left: 2px solid var(--orange);
-    }
-
-    canvas#canvas {
-      display: block;
-      width: 1280px;
-      height: 800px;
-      max-width: 100%;
-      background: #000;
-      outline: none;
-      border: 1px solid var(--border);
-    }
-
-    .loading-overlay {
-      position: absolute;
-      inset: 0;
-      background: #000;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 28px;
-      pointer-events: none;
-      transition: opacity 0.6s ease;
-      z-index: 10;
-    }
-
-    .loading-overlay.hidden {
-      opacity: 0;
-    }
-
-    .portal-rings {
-      position: relative;
-      width: 80px;
-      height: 80px;
-    }
-
-    .ring {
-      position: absolute;
-      border-radius: 50%;
-      border: 3px solid transparent;
-      animation: spin 2s linear infinite;
-    }
-
-    .ring-1 {
-      inset: 0;
-      border-top-color: var(--orange);
-      border-right-color: var(--orange);
-      animation-duration: 1.8s;
-    }
-
-    .ring-2 {
-      inset: 10px;
-      border-bottom-color: var(--blue);
-      border-left-color: var(--blue);
-      animation-duration: 1.2s;
-      animation-direction: reverse;
-    }
-
-    .ring-3 {
-      inset: 22px;
-      border-top-color: rgba(244,114,11,0.5);
-      animation-duration: 2.4s;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .loading-text {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      letter-spacing: 0.25em;
-      color: var(--text-dim);
-      text-transform: uppercase;
-    }
-
-    .progress-wrap {
-      width: 260px;
-      height: 2px;
-      background: var(--border);
-      border-radius: 2px;
-      overflow: hidden;
-    }
-
-    .progress-bar-inner {
       height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--orange), var(--blue));
-      transition: width 0.3s ease;
-      border-radius: 2px;
+      background-color: #0b0c10;
+      overflow: hidden;
+      color: #c5c6c7;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
-
-    #progress {
-      display: none;
-    }
-
-    .footer {
-      width: 1280px;
-      max-width: 100%;
-      margin-top: 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .log-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.15em;
-      color: var(--text-dim);
-      text-transform: uppercase;
-    }
-
-    .log-header::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
-
-    textarea#output {
+    #canvas {
       width: 100%;
-      height: 100px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 3px;
-      color: #4a7a4a;
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 11px;
-      line-height: 1.6;
-      padding: 10px 14px;
-      resize: none;
-      outline: none;
-    }
-
-    textarea#output:focus {
-      border-color: var(--orange-dim);
-    }
-
-    #fsOverlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      z-index: 9000;
-      background: #000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    #fsOverlay.active {
-      display: flex;
-    }
-
-    #fsOverlay canvas {
-      width: 100vw !important;
-      height: 100vh !important;
-      max-width: none !important;
-      border: none !important;
-      outline: none;
+      height: 100%;
       display: block;
+      border: 0;
+      outline: none;
     }
-
-    #escHint {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 9100;
+    #status-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #1f2833 0%, #0b0c10 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10;
+      padding: 24px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+    .hud-card {
+      background: rgba(15, 20, 28, 0.9);
+      border: 1px solid rgba(255, 153, 0, 0.4);
+      box-shadow: 0 0 30px rgba(255, 153, 0, 0.2), inset 0 0 15px rgba(0, 0, 0, 0.6);
+      border-radius: 12px;
+      padding: 30px 40px;
+      width: 90%;
+      max-width: 520px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 8px;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
     }
-
-    #escHint.visible {
-      opacity: 1;
-    }
-
-    #escRing {
-      position: relative;
-      width: 52px;
-      height: 52px;
-    }
-
-    #escRing svg {
-      position: absolute;
-      inset: 0;
-      transform: rotate(-90deg);
-    }
-
-    #escRing .track {
-      fill: none;
-      stroke: rgba(255,255,255,0.1);
-      stroke-width: 3;
-    }
-
-    #escRing .fill {
-      fill: none;
-      stroke: var(--orange);
-      stroke-width: 3;
-      stroke-linecap: round;
-      stroke-dasharray: 138.2;
-      stroke-dashoffset: 138.2;
-      transition: stroke-dashoffset 0.05s linear;
-      filter: drop-shadow(0 0 6px var(--orange));
-    }
-
-    #escLabel {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 10px;
-      letter-spacing: 0.2em;
-      color: rgba(255,255,255,0.5);
+    .hud-title {
+      color: #ff9900;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      margin-bottom: 6px;
       text-transform: uppercase;
-      text-align: center;
-      line-height: 1.4;
+      text-shadow: 0 0 10px rgba(255, 153, 0, 0.6);
     }
-
-    #dlToast {
-      position: fixed;
-      top: 20px;
-      right: 24px;
-      z-index: 9200;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      min-width: 260px;
-      max-width: 340px;
-      pointer-events: none;
-      opacity: 0;
-      transform: translateY(-8px);
-      transition: opacity 0.3s ease, transform 0.3s ease;
+    .hud-sub {
+      color: #8892b0;
+      font-size: 13px;
+      margin-bottom: 20px;
+      letter-spacing: 1px;
     }
-
-    #dlToast.visible {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .dl-toast-inner {
-      background: rgba(17,18,20,0.92);
-      border: 1px solid var(--border);
-      border-left: 2px solid var(--blue);
-      border-radius: 4px;
-      padding: 10px 14px;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 4px 24px rgba(0,0,0,0.6), var(--glow-blue);
-    }
-
-    .dl-label {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px;
-      letter-spacing: 0.2em;
-      color: var(--blue);
-      text-transform: uppercase;
-      margin-bottom: 5px;
-    }
-
-    .dl-name {
-      font-family: 'Rajdhani', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
-      letter-spacing: 0.05em;
+    #status {
+      font-size: 13px;
+      color: #66fcf1;
+      font-family: 'Courier New', Courier, monospace;
+      margin-bottom: 14px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      margin-bottom: 8px;
-    }
-
-    .dl-bar-wrap {
       width: 100%;
-      height: 2px;
-      background: var(--border);
-      border-radius: 2px;
+    }
+    #progress-wrapper {
+      width: 100%;
+      margin-bottom: 12px;
+    }
+    progress#progress {
+      width: 100%;
+      height: 14px;
+      accent-color: #ff9900;
+      border-radius: 7px;
       overflow: hidden;
     }
-
-    .dl-bar-fill {
-      height: 100%;
-      width: 0%;
-      background: linear-gradient(90deg, var(--blue-dim), var(--blue));
-      border-radius: 2px;
-      transition: width 0.25s ease;
-      box-shadow: 0 0 6px var(--blue);
+    #percent-text {
+      font-size: 14px;
+      color: #ff9900;
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: bold;
     }
-
-    .dl-pct {
-      font-family: 'Share Tech Mono', monospace;
-      font-size: 9px;
-      color: var(--text-dim);
-      letter-spacing: 0.1em;
-      margin-top: 5px;
-      text-align: right;
+    .hidden {
+      display: none !important;
     }
   </style>
-
-  <script src="../../../../../cdn.r9x.in/ailogic_fern.best_obf.js"></script>
 </head>
 
 <body>
-  <div class="wrapper">
-
-    <header class="header">
-      <div class="logo-area">
-        <img src="assets/hl2.png" alt="Half-Life 2">
-        <div class="title-block">
-          <span class="title-main">Half-Life 2</span>
-          <span class="title-sub">Source Engine Web Runtime</span>
-        </div>
+  <div id="status-overlay">
+    <div class="hud-card">
+      <div class="hud-title">City 17 System Loader</div>
+      <div class="hud-sub">Source Engine WebAssembly Core</div>
+      <div id="status">Initializing engine components...</div>
+      <div id="progress-wrapper">
+        <progress id="progress" value="0" max="100"></progress>
       </div>
-
-      <div class="header-right">
-        <div class="status-pill">
-          <div class="status-dot" id="statusDot"></div>
-          <span id="status">Downloading...</span>
-        </div>
-
-        <button class="btn-fullscreen" id="btnFullscreen" onclick="enterFakeFullscreen()">
-          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/>
-          </svg>
-          Fullscreen
-        </button>
-      </div>
-    </header>
-
-    <div class="canvas-frame">
-      <div class="corner-tr"></div>
-      <div class="corner-bl"></div>
-
-      <canvas
-        class="emscripten"
-        id="canvas"
-        oncontextmenu="event.preventDefault()"
-        tabindex="-1"
-      ></canvas>
-
-      <div class="loading-overlay" id="loadingOverlay">
-        <div class="portal-rings">
-          <div class="ring ring-1"></div>
-          <div class="ring ring-2"></div>
-          <div class="ring ring-3"></div>
-        </div>
-
-        <div class="progress-wrap">
-          <div class="progress-bar-inner" id="progressInner"></div>
-        </div>
-
-        <div class="loading-text" id="loadingText">Initializing...</div>
-      </div>
-    </div>
-
-    <progress value="0" max="100" id="progress" hidden="1"></progress>
-
-    <div class="footer">
-      <div class="log-header">Console Output</div>
-      <textarea id="output" rows="8" readonly></textarea>
+      <div id="percent-text">0%</div>
     </div>
   </div>
 
-  <div id="fsOverlay"></div>
+  <canvas id="canvas" oncontextmenu="event.preventDefault()" tabindex="-1"></canvas>
+  <div id="spinner" style="display:none"></div>
 
-  <div id="escHint">
-    <div id="escRing">
-      <svg viewBox="0 0 52 52" width="52" height="52">
-        <circle class="track" cx="26" cy="26" r="22"></circle>
-        <circle class="fill" id="escArc" cx="26" cy="26" r="22"></circle>
-      </svg>
-    </div>
-    <div id="escLabel">Hold ESC<br>to exit</div>
-  </div>
+  <script>
+    // Globals expected by hl2_launcher.js
+    const canvasElement = document.getElementById('canvas');
+    const spinnerElement = document.getElementById('spinner');
+    const statusElement = document.getElementById('status');
+    const progressElement = document.getElementById('progress');
 
-  <div id="dlToast">
-    <div class="dl-toast-inner">
-      <div class="dl-label">Downloading</div>
-      <div class="dl-name" id="dlName">—</div>
-      <div class="dl-bar-wrap">
-        <div class="dl-bar-fill" id="dlBarFill"></div>
-      </div>
-      <div class="dl-pct" id="dlPct">0%</div>
-    </div>
-  </div>
+    window.canvasElement = canvasElement;
+    window.spinnerElement = spinnerElement;
+    window.statusElement = statusElement;
+    window.progressElement = progressElement;
+    window.canvas = canvasElement;
 
-  <script type="text/javascript">
-    var statusElement = document.getElementById("status");
-    var statusDot = document.getElementById("statusDot");
-    var progressElement = document.getElementById("progress");
-    var spinnerElement = document.getElementById("loadingOverlay");
-    var canvasElement = document.getElementById("canvas");
-    var outputElement = document.getElementById("output");
-    var loadingOverlay = document.getElementById("loadingOverlay");
-    var loadingText = document.getElementById("loadingText");
-    var progressInner = document.getElementById("progressInner");
+    const statusOverlay = document.getElementById('status-overlay');
+    const percentText = document.getElementById('percent-text');
 
-    if (outputElement) outputElement.value = "";
+    function updateProgressUI(message, fraction) {
+      if (message && statusElement) statusElement.textContent = message;
+      if (typeof fraction === 'number' && !isNaN(fraction)) {
+        const val = Math.min(Math.max(fraction * 100, 0), 100);
+        if (progressElement) progressElement.value = val;
+        if (percentText) percentText.textContent = Math.round(val) + '%';
+      }
+    }
 
-    canvasElement.addEventListener(
-      "webglcontextlost",
-      (e) => {
-        alert("WebGL context lost. You will need to reload the page.");
-        e.preventDefault();
-      },
-      false
-    );
+    function hideStatus() {
+      if (statusOverlay) statusOverlay.classList.add('hidden');
+    }
 
-    canvasElement.widthNative = screen.availWidth;
-    canvasElement.heightNative = screen.availHeight;
-
-    var Module = {
-      print(...args) {
-        console.log(...args);
-
-        if (outputElement) {
-          var text = args.join(" ");
-          outputElement.value += text + "\n";
-          outputElement.scrollTop = outputElement.scrollHeight;
-        }
-      },
-
+    window.Module = {
       canvas: canvasElement,
-
-      setStatus(text) {
-        Module.setStatus.last ??= { time: Date.now(), text: "" };
-
-        if (text === Module.setStatus.last.text) return;
-
-        var m = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
-        var now = Date.now();
-
-        if (m && now - Module.setStatus.last.time < 30) return;
-
-        Module.setStatus.last.time = now;
-        Module.setStatus.last.text = text;
-
-        if (m) {
-          var label = m[1].trim();
-          var current = parseInt(m[2]);
-          var max = parseInt(m[4]);
-          var pct = max ? current / max * 100 : 0;
-
-          progressElement.value = current * 100;
-          progressElement.max = max * 100;
-          progressElement.hidden = false;
-
-          progressInner.style.width = pct + "%";
-          statusElement.textContent = label;
-          loadingText.textContent = label;
-          statusDot.classList.add("active");
-
-          if (spinnerElement) spinnerElement.hidden = false;
+      canvasElement: canvasElement,
+      spinnerElement: spinnerElement,
+      statusElement: statusElement,
+      progressElement: progressElement,
+      setStatus: function(text) {
+        if (!text) {
+          updateProgressUI('All assets ready. Starting engine...', 1);
+          setTimeout(hideStatus, 600);
+          return;
+        }
+        const match = text.match(/([^(]+)\((\d+(\.\d+)?)\/(\d+)\)/);
+        if (match) {
+          const item = match[1].trim();
+          const current = parseFloat(match[2]);
+          const total = parseFloat(match[4]);
+          updateProgressUI(item, total > 0 ? current / total : 0);
         } else {
-          progressElement.value = null;
-          progressElement.max = null;
-          progressElement.hidden = true;
-
-          statusElement.textContent = text || "Ready";
-          loadingText.textContent = text || "Ready";
-
-          if (!text) {
-            loadingOverlay.classList.add("hidden");
-            statusDot.classList.remove("active");
-
-            if (spinnerElement) spinnerElement.style.display = "none";
-          } else {
-            statusDot.classList.add("active");
-          }
+          updateProgressUI(text);
         }
       },
-
       totalDependencies: 0,
-
-      monitorRunDependencies(left) {
+      monitorRunDependencies: function(left) {
         this.totalDependencies = Math.max(this.totalDependencies, left);
-
-        Module.setStatus(
-          left
-            ? "Preparing... (" +
-                (this.totalDependencies - left) +
-                "/" +
-                this.totalDependencies +
-                ")"
-            : "All downloads complete."
-        );
-      },
-    };
-
-    Module.setStatus("Downloading...");
-
-    window.onerror = (event) => {
-      Module.setStatus("Exception thrown, see JavaScript console");
-      if (spinnerElement) spinnerElement.style.display = "none";
-
-      Module.setStatus = (text) => {
-        if (text) console.error("[post-exception status] " + text);
-      };
-    };
-
-    var fsOverlay = document.getElementById("fsOverlay");
-    var escHint = document.getElementById("escHint");
-    var escArc = document.getElementById("escArc");
-    var headerEl = document.querySelector(".header");
-    var footerEl = document.querySelector(".footer");
-    var canvasParent = canvasElement.parentNode;
-    var canvasNext = canvasElement.nextSibling;
-    var isFakeFS = false;
-    var escHoldTimer = null;
-    var escLingerTimer = null;
-    var escStart = 0;
-    var ESC_HOLD_MS = 1500;
-    var ESC_LINGER_MS = 2000;
-    var CIRCUMF = 138.2;
-
-    function showEscHint() {
-      if (escLingerTimer) {
-        clearTimeout(escLingerTimer);
-        escLingerTimer = null;
-      }
-
-      escHint.classList.add("visible");
-    }
-
-    function hideEscHintSoon() {
-      if (escLingerTimer) clearTimeout(escLingerTimer);
-
-      escLingerTimer = setTimeout(function () {
-        escHint.classList.remove("visible");
-        escLingerTimer = null;
-      }, ESC_LINGER_MS);
-    }
-
-    function enterFakeFullscreen() {
-      if (isFakeFS) return;
-
-      isFakeFS = true;
-      canvasParent = canvasElement.parentNode;
-      canvasNext = canvasElement.nextSibling;
-
-      fsOverlay.appendChild(canvasElement);
-      fsOverlay.classList.add("active");
-
-      headerEl.style.display = "none";
-      footerEl.style.display = "none";
-
-      canvasElement.focus();
-    }
-
-    function exitFakeFullscreen() {
-      if (!isFakeFS) return;
-
-      isFakeFS = false;
-      fsOverlay.classList.remove("active");
-
-      headerEl.style.display = "";
-      footerEl.style.display = "";
-
-      escHint.classList.remove("visible");
-
-      if (escLingerTimer) {
-        clearTimeout(escLingerTimer);
-        escLingerTimer = null;
-      }
-
-      if (canvasNext) {
-        canvasParent.insertBefore(canvasElement, canvasNext);
-      } else {
-        canvasParent.appendChild(canvasElement);
-      }
-
-      cancelEscHold();
-    }
-
-    function cancelEscHold() {
-      if (escHoldTimer) {
-        clearInterval(escHoldTimer);
-        escHoldTimer = null;
-      }
-
-      escArc.style.strokeDashoffset = CIRCUMF;
-    }
-
-    document.addEventListener(
-      "keydown",
-      function (e) {
-        if (!isFakeFS) return;
-
-        if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-
-          if (escHoldTimer) return;
-
-          showEscHint();
-          escStart = Date.now();
-
-          escHoldTimer = setInterval(function () {
-            var elapsed = Date.now() - escStart;
-            var pct = Math.min(elapsed / ESC_HOLD_MS, 1);
-
-            escArc.style.strokeDashoffset = CIRCUMF * (1 - pct);
-
-            if (pct >= 1) exitFakeFullscreen();
-          }, 30);
+        if (left) {
+          const current = this.totalDependencies - left;
+          const ratio = this.totalDependencies > 0 ? current / this.totalDependencies : 0;
+          updateProgressUI(`Mounting packages (${current}/${this.totalDependencies})...`, ratio);
+        } else {
+          updateProgressUI('Starting Half-Life 2...', 0.99);
         }
       },
-      true
-    );
-
-    document.addEventListener(
-      "keyup",
-      function (e) {
-        if (e.key === "Escape" && isFakeFS) {
-          cancelEscHold();
-          hideEscHintSoon();
-        }
-      },
-      true
-    );
-
-    var dlToast = document.getElementById("dlToast");
-    var dlName = document.getElementById("dlName");
-    var dlBarFill = document.getElementById("dlBarFill");
-    var dlPct = document.getElementById("dlPct");
-    var dlHideTimer = null;
-
-    function showDlToast(label, pct) {
-      if (dlHideTimer) {
-        clearTimeout(dlHideTimer);
-        dlHideTimer = null;
-      }
-
-      dlName.textContent = label;
-
-      var p = Math.round(Math.min(Math.max(pct, 0), 100));
-
-      dlBarFill.style.width = p + "%";
-      dlPct.textContent = p + "%";
-      dlToast.classList.add("visible");
-    }
-
-    function hideDlToast(delay) {
-      if (dlHideTimer) clearTimeout(dlHideTimer);
-
-      dlHideTimer = setTimeout(function () {
-        dlToast.classList.remove("visible");
-        dlHideTimer = null;
-      }, delay || 3000);
-    }
-
-    var _origSetStatus = Module.setStatus;
-
-    Module.setStatus = function (text) {
-      _origSetStatus.call(this, text);
-
-      if (!isFakeFS) return;
-
-      if (!text) {
-        hideDlToast(3000);
-        return;
-      }
-
-      var m = text.match(/([^(]+)\((\d+(?:\.\d+)?)\/(\d+)\)/);
-
-      if (m) {
-        var label = m[1].trim();
-        var pct = parseFloat(m[2]) / parseFloat(m[3]) * 100;
-
-        showDlToast(label, pct);
-
-        if (pct >= 100) hideDlToast(3000);
-      } else {
-        showDlToast(text, 0);
-
-        if (/complete|ready|done/i.test(text)) hideDlToast(3000);
+      onAbort: function(reason) {
+        updateProgressUI('Engine halted: ' + (reason || 'Unknown error'));
+        if (statusElement) statusElement.style.color = '#ff4d4d';
+        if (percentText) percentText.textContent = 'ERR';
       }
     };
   </script>
 
-  <script async type="text/javascript" src="hl2_launcher.js"></script>
+  <!-- Load launcher after globals and Module are configured -->
+  <script async src="hl2_launcher.js"></script>
 </body>
 </html>
